@@ -1,0 +1,26 @@
+body {
+    padding: 0 10px;
+    color: #c92c7b;
+    margin: auto;
+    text-align: center;
+}
+
+#plot {
+    height: 50em;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+
+@media screen and (max-width: 800px) {
+	#plot{
+		display: none !important;
+	}
+
+h1 {
+    font-size: 25px;
+}
+
+.note {
+    font-size: 15px;
+}
