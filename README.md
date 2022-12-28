@@ -14,9 +14,8 @@ usage
 -----
 
 ```sh
-# webserver and cyclo program are different packages because
-# warp dependencies make build times long, so repeatedly building
-# the cyclo program was annoying
+# webserver and cyclo are different binaries so the cyclo can be recomputed
+# without having to restart the server for visualization
 
 # build and run cyclo
 cd cyclo
@@ -69,7 +68,5 @@ to do
 * improve the extension parsing and with that include support for more languages (js, py)
 * refactor the nested for loops and if statements to be more rust-like.
     * it works for now but its gross
-* use a different webserver package because warp has a lot of dependencies which increases
-build times massively. in doing so, the webserver and cyclo can be merged into a single binary
 * maybe live updating of the webserver without needing to refresh the page?
 * progress bar

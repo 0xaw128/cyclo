@@ -10,5 +10,3 @@ name = "webserver"
 
 [dependencies]
 clap = { version = "3.2.20", features = ["derive"] }
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-warp = "0.3.2"
