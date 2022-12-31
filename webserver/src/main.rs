@@ -7,7 +7,8 @@ use clap::Parser;
 
 #[derive(Parser,Debug)]
 #[clap(name="webserver")]
-struct Args {
+struct Args
+{
     /// webserver port
     #[clap(short = 'p', long, value_parser)]
     port: u16,
@@ -15,18 +16,26 @@ struct Args {
 
 /// Struct representing the barebones for a generic HTTP request
 #[derive(Debug)]
-struct HttpRequest {
+struct HttpRequest
+{
     method: String,
     uri: String
 }
 
-impl HttpRequest {
-    fn new(request_data: String) -> Self {
+impl HttpRequest
+{
+    fn new(request_data: String) -> Self
+    {
         let req: Vec<&str> = request_data.splitn(2, "\r\n").collect();
+        /* status line is GET / HTTP/1.1 etc */
         let status_line = req[0];
 
+        /* this grabs the method like GET */
         let stat: Vec<&str> = status_line.split(" ").collect();
         let method = stat[0].to_string();
+        /* this grabs the URI, like / */
+        /* TODO: sometimes this panics as stat.len() is 1 so stat[1] is out-of-bounds.
+         * not sure why this is happening? */
         let uri = stat[1].to_string();
 
         HttpRequest { method, uri }
@@ -34,7 +43,8 @@ impl HttpRequest {
 }
 
 /// Handle the HTTP request
-fn handle_connection(mut stream: TcpStream) {
+fn handle_connection(mut stream: TcpStream)
+{
     let mut buf = vec![0;2048];
 
     stream.read(&mut buf).unwrap();
@@ -42,24 +52,32 @@ fn handle_connection(mut stream: TcpStream) {
     let request_data = String::from_utf8_lossy(&buf);
     let request = HttpRequest::new(request_data.to_string());
 
-    let response = if request.method == "GET" {
+    let response = if request.method == "GET"
+    {
 
         // parse the URI so if the user navigates to it, it'll just hit a 404
-        let filename: String = if request.uri == "/" {
+        let filename: String = if request.uri == "/"
+        {
             "index.html".to_string()
-        } else {
+        }
+        else
+        {
             request.uri
         };
 
         let path = format!("./web/{}", filename);
 
-        if Path::new(&path).exists() {
+        if Path::new(&path).exists()
+        {
             let content = fs::read_to_string(&path).unwrap();
 
             let mime_type = Path::new(&path).extension().unwrap().to_string_lossy();
-            let mime_type = if mime_type == "js" {
+            let mime_type = if mime_type == "js"
+            {
                 "javascript".to_string()
-            } else {
+            }
+            else
+            {
                 mime_type.to_string()
             };
 
@@ -71,10 +89,14 @@ fn handle_connection(mut stream: TcpStream) {
                 content_length=content.len(),
                 content_type=content_type,
                 body=content)
-        } else {
+        }
+        else
+        {
             "HTTP/1.1 404 Not Found\r\n\r\nNot Found".to_string()
         }
-    } else {
+    }
+    else
+    {
         "HTTP/1.1 501 Not Implemented\r\n\r\nNot Implemented".to_string()
     };
 
@@ -82,7 +104,8 @@ fn handle_connection(mut stream: TcpStream) {
     stream.flush().unwrap();
 }
 
-fn main() {
+fn main()
+{
     let args = Args::parse();
 
     // if args.port fails, bind to 3030
@@ -91,16 +114,18 @@ fn main() {
         SocketAddr::from(([127,0,0,1], 3030)),
     ];
 
-    let listener = match TcpListener::bind(&addrs[..]) {
+    let listener = match TcpListener::bind(&addrs[..])
+    {
         Ok(listen) => listen,
         Err(error) => panic!("faield to start TcpListener: {:?}", error),
-    }; 
+    };
 
     // use local_addr instead of args.port as an arg of 0 will cause the OS to
     // randomly assign a port
     println!("starting webserver at localhost:{:?}", listener.local_addr().unwrap());
 
-    for stream in listener.incoming() {
+    for stream in listener.incoming()
+    {
         let stream = stream.unwrap();
 
         handle_connection(stream);

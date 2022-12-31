@@ -1,10 +1,9 @@
-use std::fs;
+use std::{fs,assert_eq,assert};
 use std::io::Write;
 use std::path::PathBuf;
 use std::vec::Vec;
 use clap::Parser;
-use walkdir::WalkDir; 
-use std::assert_eq;
+use walkdir::WalkDir;
 
 mod file_parser;
 
@@ -13,49 +12,45 @@ use file_parser::FileParser;
 
 #[derive(Parser,Debug)]
 #[clap(name="cyclo", about="visualize complexity")]
-struct Args {
-    /// Relative path to directory to analyze 
+struct Args
+{
+    /// Relative path to directory to analyze
     #[clap(short = 'p', long, value_parser)]
     path: PathBuf,
-    /// Whether to write a debug file 
+    /// Whether to write a debug file
     #[clap(short = 'd', long, action)]
     debug: bool,
 }
 
-fn main() {
+fn main()
+{
     let args = Args::parse();
 
     let walker = WalkDir::new(&args.path).into_iter();
 
     let mut nlocs = Vec::new();
-    let mut nloc: u64;
     let mut labels = Vec::new();
-    let mut label: String;
     let mut parents = Vec::new();
-    let mut parent: String; 
     let mut ccs = Vec::new();
-    let mut cc: f64;
 
-    /* TODO: multithreading */
+    /* TODO: multithreading. performance isn't a massive issue atm though */
     /* parse each file and calculate complexity */
-    for entry in walker.filter_entry(|e| !file_parser::is_hidden(e)) {
+    for entry in walker.filter_entry(|e| !file_parser::is_hidden(e))
+    {
         if file_parser::is_file_extension_valid(&entry.as_ref().unwrap()
                                                       .file_name()
-                                                      .to_str().unwrap()) {
-
+                                                      .to_str().unwrap())
+        {
             let mut file = FileParser::new(&entry.as_ref().unwrap());
 
-            match file.file_walk() {
+            match file.file_walk()
+            {
                 Ok(()) => {
-                    cc = file.cc.unwrap();
-                    nloc = file.nloc.unwrap();
-                    label = file.label.unwrap();
-                    parent = file.parent.unwrap();
-                    nlocs.push(nloc);
-                    ccs.push(cc);
-                    labels.push(label.clone());
-                    parents.push(parent.clone());
-                }
+                    nlocs.push(file.nloc.unwrap());
+                    ccs.push(file.cc.unwrap());
+                    labels.push(file.label.unwrap().clone());
+                    parents.push(file.parent.unwrap().clone());
+                },
                 Err(e) => {
                     eprintln!("Error: {:?}", e);
                     continue;
@@ -75,21 +70,26 @@ fn main() {
             full_path.pop();
 
             /* loop through and check if the parent dirs are in the parent and label vecs */
-            for _ in 0..depth {
+            for _ in 0..depth
+            {
                 /* check if the path is a parent */
 
                 /* if the parent path does not exist in the parent vec */
-                if !labels.contains(&full_path[len-depth-1..].join("/")) {
+                if !labels.contains(&full_path[len-depth-1..].join("/"))
+                {
                     nlocs.push(0);
                     ccs.push(0.0);
                     labels.push(full_path[len-depth-1..].join("/"));
 
                     full_path.pop();
 
-                    if full_path.is_empty() {
+                    if full_path.is_empty()
+                    {
                         parents.push("".to_string());
 
-                    } else {
+                    }
+                    else
+                    {
                         parents.push(full_path[len-depth-1..].join("/"));
                     }
                 }
@@ -108,6 +108,8 @@ fn main() {
         let sum = ccs.iter().sum::<f64>();
         let count = ccs.len();
 
+        assert!(count > 0, "count ({}) is not greater than zero", count);
+
         let mean = sum / count as f64;
 
         let js_file = format!(r#"
@@ -124,11 +126,13 @@ var jsondata = [{{
     }
 
 
-    if args.debug {
+    if args.debug
+    {
         /* write the debug file */
         let mut buffer = fs::File::create("debug.txt").unwrap();
 
-        for i in 0..nlocs.len() {
+        for i in 0..nlocs.len()
+        {
             writeln!(&mut buffer, "file: {:?}, nloc: {:?}, cc: {:?}", labels[i], nlocs[i], ccs[i]).unwrap();
         }
     }
